@@ -45,12 +45,16 @@ spec:
           value: "https://mediafilez.forgecdn.net/files/4145/998/Valhelsia-5-5.0.10-SERVER.zip"
         - name: USE_MODPACK_START_SCRIPT
           value: "true"
-        - name: WHITELIST
-          value: "Kiporshnikov"
-        - name: OPS
-          value: "Kiporshnikov"
+        - name: WHITELIST_FILE
+          value: "https://raw.githubusercontent.com/pointclap/Minecraft/main/whitelist.json"
+        - name: OPS_FILE
+          value: "https://raw.githubusercontent.com/pointclap/Minecraft/main/ops.json"
         - name: ENFORCE_WHITELIST
-          value: "TRUE"
+          value: "true"
+        - name: OVERRIDE_WHITELIST
+          value: "true"
+        - name: OVERRIDE_OPS
+          value: "true"
         - name: SEED
           value: "pointclaps"
         - name: MEMORY
@@ -77,12 +81,15 @@ kind: Service
 metadata:
   namespace: pointclap
   name: mc-valhelsia5
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: valhelsia.pointclap.org
 spec:
   type: NodePort
   selector:
     app: mc-valhelsia5
   ports:
-    - protocol: TCP
+    - name: minecraft
+      protocol: TCP
       port: 25565
       nodePort: 31766
       targetPort: main
