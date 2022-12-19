@@ -1,0 +1,88 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: valhelsia5-data
+  namespace: pointclap
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: block-store
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mc-valhelsia5
+  namespace: pointclap
+spec:
+  selector:
+    matchLabels:
+      app: mc-valhelsia5
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mc-valhelsia5
+    spec:
+      containers:
+      - image: itzg/minecraft-server:java17-alpine
+#      - image: alpine:latest
+#        command: ["/bin/sh"]
+#        args: ["-c", "trap : TERM INT; sleep infinity & wait"]
+        name: mc-valhelsia5
+        env:
+        - name: EULA
+          value: "TRUE"
+        - name: TYPE
+          value: CURSEFORGE
+        - name: VERSION
+          value: "1.19.2"
+        - name: CF_SERVER_MOD
+          value: "https://mediafilez.forgecdn.net/files/4145/998/Valhelsia-5-5.0.10-SERVER.zip"
+        - name: USE_MODPACK_START_SCRIPT
+          value: "true"
+        - name: WHITELIST
+          value: "Kiporshnikov"
+        - name: OPS
+          value: "Kiporshnikov"
+        - name: ENFORCE_WHITELIST
+          value: "TRUE"
+        - name: SEED
+          value: "pointclaps"
+        - name: MEMORY
+          value: "12G"
+        - name: INIT_MEMORY
+          value: "12G"
+        - name: MAX_MEMORY
+          value: "24G"
+        - name: USE_AIKAR_FLAGS
+          value: "true"
+        ports:
+        - containerPort: 25565
+          name: main
+        volumeMounts:
+        - name: valhelsia5-data
+          mountPath: /data
+      volumes:
+      - name: valhelsia5-data
+        persistentVolumeClaim:
+          claimName: valhelsia5-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: pointclap
+  name: mc-valhelsia5
+spec:
+  type: NodePort
+  selector:
+    app: mc-valhelsia5
+  ports:
+    - protocol: TCP
+      port: 25565
+      nodePort: 31766
+      targetPort: main
