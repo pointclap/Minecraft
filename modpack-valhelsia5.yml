@@ -45,6 +45,10 @@ spec:
           value: "https://mediafilez.forgecdn.net/files/4145/998/Valhelsia-5-5.0.10-SERVER.zip"
         - name: USE_MODPACK_START_SCRIPT
           value: "true"
+        - name: COPY_MODS_DEST
+          value: "/data/FeedTheBeast/mods"
+        - name: MODS
+          value: "https://mediafilez.forgecdn.net/files/3934/701/Dynmap-3.4-forge-1.19.2.jar"
         - name: WHITELIST_FILE
           value: "https://raw.githubusercontent.com/pointclap/Minecraft/main/whitelist.json"
         - name: OPS_FILE
@@ -68,9 +72,29 @@ spec:
         ports:
         - containerPort: 25565
           name: main
+        - containerPort: 8123
+          name: dynmap
         volumeMounts:
         - name: valhelsia5-data
           mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - mc-health
+          initialDelaySeconds: 90
+          periodSeconds: 5
+          failureThreshold: 20
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          exec:
+            command:
+            - mc-health
+          initialDelaySeconds: 120
+          periodSeconds: 5
+          failureThreshold: 20
+          successThreshold: 1
+          timeoutSeconds: 1
       volumes:
       - name: valhelsia5-data
         persistentVolumeClaim:
@@ -93,3 +117,47 @@ spec:
       port: 25565
       nodePort: 31766
       targetPort: main
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: pointclap
+  name: mc-valhelsia5-dynmap
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: map.valhelsia.pointclap.org
+spec:
+  selector:
+    app: mc-valhelsia5
+  ports:
+    - name: dynmap
+      protocol: TCP
+      port: 80
+      targetPort: dynmap
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    external-dns.alpha.kubernetes.io/hostname: map.valhelsia.pointclap.org
+    ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: mc-valhelsia5-dynmap
+  namespace: pointclap
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: map.valhelsia.pointclap.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: mc-valhelsia5-dynmap
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - map.valhelsia.pointclap.org
+    secretName: dymap-ingress-secret
