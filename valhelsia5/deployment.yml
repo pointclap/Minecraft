@@ -2,7 +2,33 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: valhelsia5-data
+  name: valhelsia5-world
+  namespace: pointclap
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: block-store
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: valhelsia5-dynmap
+  namespace: pointclap
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: block-store
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: valhelsia5-backups
   namespace: pointclap
 spec:
   accessModes:
@@ -18,6 +44,7 @@ metadata:
   name: mc-valhelsia5
   namespace: pointclap
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: mc-valhelsia5
@@ -28,27 +55,17 @@ spec:
       labels:
         app: mc-valhelsia5
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
-      - image: itzg/minecraft-server:java17-alpine
-#      - image: alpine:latest
-#        command: ["/bin/sh"]
-#        args: ["-c", "trap : TERM INT; sleep infinity & wait"]
+      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.11
+        imagePullPolicy: Always
         name: mc-valhelsia5
         env:
-        - name: EULA
-          value: "TRUE"
-        - name: TYPE
-          value: CURSEFORGE
-        - name: VERSION
-          value: "1.19.2"
-        - name: CF_SERVER_MOD
-          value: "https://mediafilez.forgecdn.net/files/4145/998/Valhelsia-5-5.0.10-SERVER.zip"
-        - name: USE_MODPACK_START_SCRIPT
-          value: "true"
-        - name: COPY_MODS_DEST
-          value: "/data/FeedTheBeast/mods"
-        - name: MODS
-          value: "https://mediafilez.forgecdn.net/files/3934/701/Dynmap-3.4-forge-1.19.2.jar"
+        - name: SERVER_NAME
+          value: Land-based Raft
         - name: WHITELIST_FILE
           value: "https://raw.githubusercontent.com/pointclap/Minecraft/main/whitelist.json"
         - name: OPS_FILE
@@ -59,14 +76,16 @@ spec:
           value: "true"
         - name: OVERRIDE_OPS
           value: "true"
+        - name: ICON
+          value: "https://raw.githubusercontent.com/pointclap/Minecraft/main/icon.jpg"
+        - name: OVERRIDE_ICON
+          value: "true"
         - name: SEED
           value: "pointclaps"
-        - name: MEMORY
-          value: "12G"
         - name: INIT_MEMORY
           value: "12G"
         - name: MAX_MEMORY
-          value: "24G"
+          value: "16G"
         - name: USE_AIKAR_FLAGS
           value: "true"
         ports:
@@ -75,8 +94,12 @@ spec:
         - containerPort: 8123
           name: dynmap
         volumeMounts:
-        - name: valhelsia5-data
-          mountPath: /data
+        - name: valhelsia5-world
+          mountPath: /data/world
+        - name: valhelsia5-dynmap
+          mountPath: /data/dynmap
+        - name: valhelsia5-backups
+          mountPath: /data/simplebackups
         livenessProbe:
           exec:
             command:
@@ -95,10 +118,77 @@ spec:
           failureThreshold: 20
           successThreshold: 1
           timeoutSeconds: 1
+        resources:
+          requests:
+            memory: "12Gi"
+            cpu: "4"
+          limits:
+            memory: "24Gi"
+            cpu: "8"
       volumes:
-      - name: valhelsia5-data
+      - name: valhelsia5-world
         persistentVolumeClaim:
-          claimName: valhelsia5-data
+          claimName: valhelsia5-world
+      - name: valhelsia5-dynmap
+        persistentVolumeClaim:
+          claimName: valhelsia5-dynmap
+      - name: valhelsia5-backups
+        persistentVolumeClaim:
+          claimName: valhelsia5-backups
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mc-valhelsia5-interactive
+  namespace: pointclap
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: mc-valhelsia5-interactive
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mc-valhelsia5-interactive
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.11
+        command: ["/bin/sh"]
+        args: ["-c", "trap : TERM INT; sleep infinity & wait"]
+        imagePullPolicy: Always
+        name: mc-valhelsia5-interactive
+        volumeMounts:
+        - name: valhelsia5-world
+          mountPath: /data/world
+        - name: valhelsia5-dynmap
+          mountPath: /data/dynmap
+        - name: valhelsia5-backups
+          mountPath: /data/simplebackups
+        - name: valhelsia5-data
+          mountPath: /old-data
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: valhelsia5-world
+        persistentVolumeClaim:
+          claimName: valhelsia5-world
+      - name: valhelsia5-dynmap
+        persistentVolumeClaim:
+          claimName: valhelsia5-dynmap
+      - name: valhelsia5-backups
+        persistentVolumeClaim:
+          claimName: valhelsia5-backups
 ---
 apiVersion: v1
 kind: Service
@@ -115,7 +205,6 @@ spec:
     - name: minecraft
       protocol: TCP
       port: 25565
-      nodePort: 31766
       targetPort: main
 ---
 apiVersion: v1
