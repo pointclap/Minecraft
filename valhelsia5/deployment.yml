@@ -60,7 +60,7 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
-      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.11
+      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.12
         imagePullPolicy: Always
         name: mc-valhelsia5
         env:
@@ -170,8 +170,6 @@ spec:
           mountPath: /data/dynmap
         - name: valhelsia5-backups
           mountPath: /data/simplebackups
-        - name: valhelsia5-data
-          mountPath: /old-data
         resources:
           requests:
             memory: "100Mi"
