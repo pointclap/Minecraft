@@ -1,7 +1,7 @@
 FROM itzg/minecraft-server:java17-alpine
 
 
-ENV VALHELSIA_VERSION=5.0.12
+ENV VALHELSIA_VERSION=5.0.14a
 
 # Accept EULA
 ENV EULA=true
@@ -9,12 +9,12 @@ ENV EULA=true
 # While building the image, run the server in SETUP_ONLY mode
 # which downloads and builds the modpack, and then shuts down.
 ARG SETUP_ONLY=true
-ARG CF_SERVER_MOD=https://mediafilez.forgecdn.net/files/4303/770/Valhelsia-5-5.0.12-SERVER.zip
+ARG CF_SERVER_MOD=https://mediafilez.forgecdn.net/files/4386/667/Valhelsia-5-5.0.14a-SERVER.zip
 
 # Valhelsia 5 settings.
 ENV TYPE=CURSEFORGE
 ENV CF_BASE_DIR="/data"
-ENV FORGE_VERSION=43.2.1
+ENV FORGE_VERSION=43.2.3
 ENV VERSION=1.19.2
 
 # Extra mods

@@ -60,7 +60,7 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
-      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.12
+      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.14a
         imagePullPolicy: Always
         name: mc-valhelsia5
         env:
@@ -158,7 +158,7 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
-      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.11
+      - image: registry.pointclap.org/minecraft/valhelsia5:5.0.14a
         command: ["/bin/sh"]
         args: ["-c", "trap : TERM INT; sleep infinity & wait"]
         imagePullPolicy: Always
